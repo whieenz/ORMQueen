@@ -181,21 +181,77 @@ public class SQLiteDbUtil {
         }
     }
 
-    /**
-     * 创建表默认会创建一个列名为id的列，主键，自动增长
-     *
-     * @param <T> 泛型对象
-     * @param c   要创建的对象类，自动映射为表名
-     */
-    public <T> void createTable(Class<T> c) {
+//    /**
+//     * 创建表默认会创建一个列名为id的列，主键，自动增长
+//     *
+//     * @param <T> 泛型对象
+//     * @param c   要创建的对象类，自动映射为表名
+//     */
+//    public <T> void createTable(Class<T> c) {
+//        String TABLE_NAME = JavaReflectUtil.getClassName(c).toUpperCase();
+//        String[] column = JavaReflectUtil.getAttributeNames(c);
+//        Object[] type = JavaReflectUtil.getAttributeType(c);
+//        Object[] listType = JavaReflectUtil.getAttributeListType(c);
+//        int listItem = 0;
+//        StringBuilder sqlBuilder = new StringBuilder();
+//        sqlBuilder.append("CREATE TABLE IF NOT EXISTS " + TABLE_NAME + "(");
+//        sqlBuilder.append("ID INTEGER PRIMARY KEY AUTOINCREMENT,");
+//        for (int i = 0; i < column.length; i++) {
+//            String columnName = column[i].toUpperCase();
+//            if (!"ID".equals(columnName)) {
+//                String typeInfo = ((Class) type[i]).getName();
+//                if (isBase(typeInfo)) {  //是否基本类型
+//                    if (i != column.length - 1) {
+//                        sqlBuilder.append(columnName + " " + "TEXT ");
+//                        sqlBuilder.append(",");
+//                    } else {
+//                        sqlBuilder.append(columnName + " " + "TEXT ");
+//                    }
+//                } else if (typeInfo.equals("java.util.List")) {
+//                    Class listClass = (Class) listType[listItem++];
+//                    createSubTable(listClass, TABLE_NAME + "_ID");
+//                    if (i != column.length - 1) {
+//                        sqlBuilder.append(columnName + " " + " INTEGER");
+//                        sqlBuilder.append(",");
+//                    } else {
+//                        sqlBuilder.append(columnName + " " + " INTEGER");
+//                    }
+//                } else {
+//                    Class<?> newClass;
+//                    try {
+//                        newClass = Class.forName(typeInfo);
+//                        createTable(newClass);
+//                    } catch (ClassNotFoundException e) {
+//                        e.printStackTrace();
+//                    }
+//                    if (i != column.length - 1) {
+//                        sqlBuilder.append(columnName + " INTEGER");
+//                        sqlBuilder.append(",");
+//                    } else {
+//                        sqlBuilder.append(columnName + " INTEGER");
+//                    }
+//                }
+//            }
+//        }
+//        sqlBuilder.append(")");
+//        Log.i("", sqlBuilder.toString());
+//        execSQL(sqlBuilder.toString());
+//    }
+
+    public void createTable(Class c, String... mainIDs) {
         String TABLE_NAME = JavaReflectUtil.getClassName(c).toUpperCase();
         String[] column = JavaReflectUtil.getAttributeNames(c);
         Object[] type = JavaReflectUtil.getAttributeType(c);
         Object[] listType = JavaReflectUtil.getAttributeListType(c);
         int listItem = 0;
+        List<String> createdTableCache = new ArrayList<>();
+
         StringBuilder sqlBuilder = new StringBuilder();
         sqlBuilder.append("CREATE TABLE IF NOT EXISTS " + TABLE_NAME + "(");
         sqlBuilder.append("ID INTEGER PRIMARY KEY AUTOINCREMENT,");
+        for (String mainID : mainIDs) {
+            sqlBuilder.append(mainID + " INTEGER,");
+        }
         for (int i = 0; i < column.length; i++) {
             String columnName = column[i].toUpperCase();
             if (!"ID".equals(columnName)) {
@@ -209,7 +265,10 @@ public class SQLiteDbUtil {
                     }
                 } else if (typeInfo.equals("java.util.List")) {
                     Class listClass = (Class) listType[listItem++];
-                    createTable(listClass);
+                    if (!createdTableCache.contains(listClass.getName().toUpperCase())) {
+                        createTable(listClass, TABLE_NAME + "_ID");
+                        createdTableCache.add(listClass.getName().toUpperCase());
+                    }
                     if (i != column.length - 1) {
                         sqlBuilder.append(columnName + " " + " INTEGER");
                         sqlBuilder.append(",");
@@ -220,7 +279,10 @@ public class SQLiteDbUtil {
                     Class<?> newClass;
                     try {
                         newClass = Class.forName(typeInfo);
-                        createTable(newClass);
+                        if (!createdTableCache.contains(newClass.getName().toUpperCase())) {
+                            createTable(newClass, TABLE_NAME + "_ID");
+                            createdTableCache.add(newClass.getName().toUpperCase());
+                        }
                     } catch (ClassNotFoundException e) {
                         e.printStackTrace();
                     }

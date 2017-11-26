@@ -15,7 +15,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         //SQLiteDbUtil.createTable(MaterialXjListBean.class);
-        SQLiteDbUtil.createTable(MultiBean.class);
+        SQLiteDbUtil.getSQLiteDbUtil().createTable(MultiBean.class);
        // JavaReflectUtil.getAttributeListType(MultiBean.class);
     }
 }
