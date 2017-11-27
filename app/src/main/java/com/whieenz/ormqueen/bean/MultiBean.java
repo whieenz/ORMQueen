@@ -22,10 +22,6 @@ public class MultiBean {
     private MaterialXjListBean xjListBean1 = new MaterialXjListBean();
     private MaterialXjListBean xjListBean2;
     private List<MaterialXjListBean> xjListBeans = new ArrayList<>();
-    private EntitySlBean entitySlBean1 = new EntitySlBean();
-    private EntitySlBean entitySlBean2;
-    private List<EntitySlBean> entitySlBeans;
-
 
     public String getEntityid() {
         return entityid;
@@ -115,27 +111,4 @@ public class MultiBean {
         this.xjListBeans = xjListBeans;
     }
 
-    public EntitySlBean getEntitySlBean1() {
-        return entitySlBean1;
-    }
-
-    public void setEntitySlBean1(EntitySlBean entitySlBean1) {
-        this.entitySlBean1 = entitySlBean1;
-    }
-
-    public EntitySlBean getEntitySlBean2() {
-        return entitySlBean2;
-    }
-
-    public void setEntitySlBean2(EntitySlBean entitySlBean2) {
-        this.entitySlBean2 = entitySlBean2;
-    }
-
-    public List<EntitySlBean> getEntitySlBeans() {
-        return entitySlBeans;
-    }
-
-    public void setEntitySlBeans(List<EntitySlBean> entitySlBeans) {
-        this.entitySlBeans = entitySlBeans;
-    }
 }

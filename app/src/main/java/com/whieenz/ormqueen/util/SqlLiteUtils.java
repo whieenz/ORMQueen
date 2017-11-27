@@ -12,6 +12,7 @@ import java.util.Map;
 
 /**
  * Created by wuzhigang on 2017-08-24.
+ *
  */
 public class SqlLiteUtils {
     private static String TAG = "CursorUtils";
