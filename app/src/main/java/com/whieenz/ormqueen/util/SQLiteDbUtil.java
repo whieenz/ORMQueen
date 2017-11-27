@@ -699,8 +699,25 @@ public class SQLiteDbUtil {
         }
     }
 
-    private String getID(String sql) {
+//    private String getID(String sql) {
+//        String id = "";
+//        try {
+//            openDB();
+//            Cursor cursor = sqLiteDatabase.rawQuery(sql, null, null);
+//            if (cursor.moveToFirst()) {
+//                id = cursor.getString(cursor.getColumnIndex("ID"));
+//            }
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        } finally {
+//            close();
+//        }
+//        return id == null ? "1" : id;
+//    }
+
+    private String getID(String table_name) {
         String id = "";
+        String sql = "SELECT MAX(ID)+1 AS ID FROM " + table_name;
         try {
             openDB();
             Cursor cursor = sqLiteDatabase.rawQuery(sql, null, null);
@@ -760,7 +777,7 @@ public class SQLiteDbUtil {
      * @param <T> 泛型对象
      * @return 查询出来的对象类集合
      */
-    public  <T> List<T> cursor2Bean(Cursor cursor, Class<T> c) {
+    public <T> List<T> cursor2Bean(Cursor cursor, Class<T> c) {
         List<T> lists = null;
         if (cursor == null) {
             return null;
@@ -812,7 +829,8 @@ public class SQLiteDbUtil {
                     Class<?> newClass;
                     try {
                         newClass = Class.forName(typeInfo);
-                        List clazzList = query(newClass, TABLE_NAME + "_ID", id);
+                        String mainID = cursor.getString(cursor.getColumnIndex(tableColumn));
+                        List clazzList = query(newClass, "ID", mainID);
                         if (clazzList != null && clazzList.size() > 0) {
                             retMap.put(columnName, clazzList.get(0));
                         }
@@ -889,8 +907,7 @@ public class SQLiteDbUtil {
             Log.d(TAG, "getContentValues: ");
         }
         String table_name = JavaReflectUtil.getClassName(c).toUpperCase();
-        String sql = "SELECT MAX(ID)+1 AS ID FROM " + table_name;
-        String id = getID(sql);
+        String id = getID(table_name);
         List<Map<String, Object>> allInfo = JavaReflectUtil.getAllFiledInfo(t);
         ContentValues contentValues = new ContentValues();
         for (int i = 0; i < ids.length; i += 2) {
@@ -898,7 +915,7 @@ public class SQLiteDbUtil {
         }
         for (int i = 0; i < allInfo.size(); i++) {
             Map<String, Object> info = allInfo.get(i);
-            String column = (String) info.get("name");
+            String column = info.get("name").toString().toUpperCase();
             Class type = (Class) info.get("type");
             Object value = info.get("value");
             String typeInfo = type.getName();
@@ -911,6 +928,15 @@ public class SQLiteDbUtil {
             } else if (typeInfo.equals("java.util.List")) {
                 insertAll((List) value, table_name + "_ID", id);
             } else {
+                Class<?> newClass;
+                try {
+                    newClass = Class.forName(typeInfo);
+                    String subTableName = JavaReflectUtil.getClassName(newClass).toUpperCase();
+                    String subID = getID(subTableName);
+                    contentValues.put(column, subID);
+                } catch (ClassNotFoundException e) {
+                    e.printStackTrace();
+                }
                 insert(value, table_name + "_ID", id);
             }
         }
@@ -943,35 +969,4 @@ public class SQLiteDbUtil {
         }
         return num;
     }
-
-/**
- *  Class<?> c = t.getClass();
- String TABLE_NAME = JavaReflectUtil.getClassName(c).toUpperCase();
- List<Map<String, Object>> allInfo = JavaReflectUtil.getAllFiledInfo(t);
- String sql = "select max(ID) from " + TABLE_NAME;
- Object[] listType = JavaReflectUtil.getAttributeListType(c);
- int listItem = 0;
- for (int i = 0; i < allInfo.size(); i++) {
- Map<String, Object> info = allInfo.get(i);
- String column = (String) info.get("name");
- Class type = (Class) info.get("type");
- Object value = info.get("value");
- String typeInfo = type.getName();
- if (isBase(typeInfo)) {  //是否基本类型
-
- } else if (typeInfo.equals("java.util.List")) {
- Class listClass = (Class) listType[listItem++];
-
- } else {
- Class<?> newClass;
- try {
- newClass = Class.forName(typeInfo);
- } catch (ClassNotFoundException e) {
- e.printStackTrace();
- }
-
- }
-
- }
- */
 }
