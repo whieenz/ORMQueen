@@ -8,7 +8,9 @@ import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Build;
 import android.text.TextUtils;
-import android.util.Log;
+
+import com.whieenz.ormqueen.inter.OnClassDivisionListener;
+import com.whieenz.ormqueen.inter.OnObjectDivisionListener;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -22,7 +24,7 @@ import java.util.Map;
  * Created by heziwen on 2017-08-28.
  */
 
-public class SQLiteDbUtil {
+public class SQLiteUtil {
     /**
      * 支持的表字段数据类型包括：基本类型、包装类型、String类型、Date类型
      */
@@ -46,7 +48,7 @@ public class SQLiteDbUtil {
     /**
      * SQLite工具类对象
      */
-    private static volatile SQLiteDbUtil sqLiteDbUtil;
+    private static volatile SQLiteUtil sqLiteDbUtil;
     /**
      * 打印日志的TAG，用来调试
      */
@@ -75,7 +77,7 @@ public class SQLiteDbUtil {
     /**
      * 构造函数私有化，单例
      */
-    private SQLiteDbUtil(Context context) {
+    private SQLiteUtil(Context context) {
         dbHelper = new DatabaseHelper(context);
     }
 
@@ -84,11 +86,11 @@ public class SQLiteDbUtil {
      *
      * @return 数据库管理工具类对象
      */
-    public static SQLiteDbUtil getSQLiteDbUtil(Context context) {
+    public static SQLiteUtil getSQLiteDbUtil(Context context) {
         if (sqLiteDbUtil == null) {
-            synchronized (SQLiteDbUtil.class) {
+            synchronized (SQLiteUtil.class) {
                 if (sqLiteDbUtil == null) {
-                    sqLiteDbUtil = new SQLiteDbUtil(context);
+                    sqLiteDbUtil = new SQLiteUtil(context);
                 }
             }
         }
@@ -179,123 +181,113 @@ public class SQLiteDbUtil {
         }
     }
 
-//    /**
-//     * 创建表默认会创建一个列名为id的列，主键，自动增长
-//     *
-//     * @param <T> 泛型对象
-//     * @param c   要创建的对象类，自动映射为表名
-//     */
-//    public <T> void createTable(Class<T> c) {
-//        String TABLE_NAME = JavaReflectUtil.getClassName(c).toUpperCase();
-//        String[] column = JavaReflectUtil.getAttributeNames(c);
-//        Object[] type = JavaReflectUtil.getAttributeType(c);
-//        Object[] listType = JavaReflectUtil.getAttributeListType(c);
-//        int listItem = 0;
-//        StringBuilder sqlBuilder = new StringBuilder();
-//        sqlBuilder.append("CREATE TABLE IF NOT EXISTS " + TABLE_NAME + "(");
-//        sqlBuilder.append("ID INTEGER PRIMARY KEY AUTOINCREMENT,");
-//        for (int i = 0; i < column.length; i++) {
-//            String columnName = column[i].toUpperCase();
-//            if (!"ID".equals(columnName)) {
-//                String typeInfo = ((Class) type[i]).getName();
-//                if (isBase(typeInfo)) {  //是否基本类型
-//                    if (i != column.length - 1) {
-//                        sqlBuilder.append(columnName + " " + "TEXT ");
-//                        sqlBuilder.append(",");
-//                    } else {
-//                        sqlBuilder.append(columnName + " " + "TEXT ");
-//                    }
-//                } else if (typeInfo.equals("java.util.List")) {
-//                    Class listClass = (Class) listType[listItem++];
-//                    createSubTable(listClass, TABLE_NAME + "_ID");
-//                    if (i != column.length - 1) {
-//                        sqlBuilder.append(columnName + " " + " INTEGER");
-//                        sqlBuilder.append(",");
-//                    } else {
-//                        sqlBuilder.append(columnName + " " + " INTEGER");
-//                    }
-//                } else {
-//                    Class<?> newClass;
-//                    try {
-//                        newClass = Class.forName(typeInfo);
-//                        createTable(newClass);
-//                    } catch (ClassNotFoundException e) {
-//                        e.printStackTrace();
-//                    }
-//                    if (i != column.length - 1) {
-//                        sqlBuilder.append(columnName + " INTEGER");
-//                        sqlBuilder.append(",");
-//                    } else {
-//                        sqlBuilder.append(columnName + " INTEGER");
-//                    }
-//                }
-//            }
-//        }
-//        sqlBuilder.append(")");
-//        Log.i("", sqlBuilder.toString());
-//        execSQL(sqlBuilder.toString());
-//    }
-
-    public void createTable(Class c, String... mainIDs) {
-        String TABLE_NAME = JavaReflectUtil.getClassName(c).toUpperCase();
+    private void divisionByClass(Class c, OnClassDivisionListener listener) {
         String[] column = JavaReflectUtil.getAttributeNames(c);
         Object[] type = JavaReflectUtil.getAttributeType(c);
         Object[] listType = JavaReflectUtil.getAttributeListType(c);
         int listItem = 0;
-        List<String> createdTableCache = new ArrayList<>();
-
-        StringBuilder sqlBuilder = new StringBuilder();
-        sqlBuilder.append("CREATE TABLE IF NOT EXISTS " + TABLE_NAME + "(");
-        sqlBuilder.append("ID INTEGER PRIMARY KEY AUTOINCREMENT,");
-        for (String mainID : mainIDs) {
-            sqlBuilder.append(mainID + " INTEGER,");
-        }
         for (int i = 0; i < column.length; i++) {
-            String columnName = column[i].toUpperCase();
+            String columnName = column[i];
             if (!"ID".equals(columnName)) {
                 String typeInfo = ((Class) type[i]).getName();
-                if (isBase(typeInfo)) {  //是否基本类型
-                    if (i != column.length - 1) {
-                        sqlBuilder.append(columnName + " " + "TEXT ");
-                        sqlBuilder.append(",");
-                    } else {
-                        sqlBuilder.append(columnName + " " + "TEXT ");
-                    }
+                boolean isLast = i == column.length - 1;
+                if (isBase(typeInfo)) {
+                    listener.afterBase(columnName, (Class) type[i], isLast);
                 } else if (typeInfo.equals("java.util.List")) {
                     Class listClass = (Class) listType[listItem++];
-                    if (!createdTableCache.contains(listClass.getName().toUpperCase())) {
-                        createTable(listClass, TABLE_NAME + "_ID");
-                        createdTableCache.add(listClass.getName().toUpperCase());
-                    }
-                    if (i != column.length - 1) {
-                        sqlBuilder.append(columnName + " " + " INTEGER");
-                        sqlBuilder.append(",");
-                    } else {
-                        sqlBuilder.append(columnName + " " + " INTEGER");
-                    }
+                    listener.afterList(columnName, listClass, isLast);
                 } else {
                     Class<?> newClass;
                     try {
                         newClass = Class.forName(typeInfo);
-                        if (!createdTableCache.contains(newClass.getName().toUpperCase())) {
-                            createTable(newClass, TABLE_NAME + "_ID");
-                            createdTableCache.add(newClass.getName().toUpperCase());
-                        }
+                        listener.afterObject(columnName, newClass, isLast);
                     } catch (ClassNotFoundException e) {
                         e.printStackTrace();
-                    }
-                    if (i != column.length - 1) {
-                        sqlBuilder.append(columnName + " INTEGER");
-                        sqlBuilder.append(",");
-                    } else {
-                        sqlBuilder.append(columnName + " INTEGER");
                     }
                 }
             }
         }
+    }
+
+    private void divisionByObject(Object o, OnObjectDivisionListener listener) {
+        List<Map<String, Object>> allInfo = JavaReflectUtil.getAllFiledInfo(o);
+        Object[] listType = JavaReflectUtil.getAttributeListType(o.getClass());
+        int listItem = 0;
+        for (int i = 0; i < allInfo.size(); i++) {
+            Map<String, Object> info = allInfo.get(i);
+            String column = info.get("name").toString();
+            Class type = (Class) info.get("type");
+            Object value = info.get("value");
+            String typeInfo = type.getName();
+            if (isBase(typeInfo)) {
+                listener.afterBase(column, type, value.toString());
+            } else if (typeInfo.equals("java.util.List")) {
+                Class listClass = (Class) listType[listItem++];
+                listener.afterList(column, listClass, (List) value);
+            } else {
+                Class<?> newClass;
+                try {
+                    newClass = Class.forName(typeInfo);
+                    listener.afterObject(column, newClass, value);
+                } catch (ClassNotFoundException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    /**
+     * 创建表默认会创建一个列名为id的列，主键，自动增长
+     *
+     * @param c       类
+     * @param mainIDs 如果有外键 （外键名）
+     */
+    public void createTable(Class c, String... mainIDs) {
+        final String TABLE_NAME = JavaReflectUtil.getClassName(c).toUpperCase();
+        final StringBuilder sqlBuilder = new StringBuilder();
+        sqlBuilder.append("CREATE TABLE IF NOT EXISTS ").append(TABLE_NAME).append("(");
+        sqlBuilder.append("ID INTEGER PRIMARY KEY AUTOINCREMENT,");
+        for (String mainID : mainIDs) {
+            sqlBuilder.append(mainID).append(" INTEGER,");
+        }
+        divisionByClass(c, new OnClassDivisionListener() {
+            @Override
+            public void afterBase(String column, Class clzaa, boolean isLast) {
+                addColumn2Builder(column, isLast, sqlBuilder, "TEXT");
+            }
+
+            @Override
+            public void afterObject(String column, Class clzaa, boolean isLast) {
+                createTable(clzaa, TABLE_NAME + "_ID");
+                addColumn2Builder(column, isLast, sqlBuilder, "INTEGER");
+            }
+
+            @Override
+            public void afterList(String column, Class clzaa, boolean isLast) {
+                createTable(clzaa, TABLE_NAME + "_ID");
+                addColumn2Builder(column, isLast, sqlBuilder, "INTEGER");
+            }
+        });
         sqlBuilder.append(")");
-        Log.i("", sqlBuilder.toString());
         execSQL(sqlBuilder.toString());
+    }
+
+    /**
+     * 新增数据库表一个列字段
+     *
+     * @param column     字段名对应Class 属性
+     * @param isLast     是否结束标记
+     * @param sqlBuilder sqlBuilder
+     * @param columnType 字段类型
+     */
+    private void addColumn2Builder(String column, boolean isLast, StringBuilder sqlBuilder, String columnType) {
+        String columnName = column.toUpperCase();
+        if (isLast) {
+            sqlBuilder.append(columnName).append(" ").append(columnType).append(" ");
+        } else {
+            sqlBuilder.append(columnName).append(" ").append(columnType).append(" ");
+            sqlBuilder.append(",");
+        }
     }
 
 
@@ -336,19 +328,13 @@ public class SQLiteDbUtil {
             return;
         }
         try {
-            open();
-            sqLiteDatabase.beginTransaction();
             for (T t : lists) {
                 String TABLE_NAME = JavaReflectUtil.getClassName(t.getClass());
                 ContentValues contentValues = getContentValues(t);
                 sqLiteDatabase.insert(TABLE_NAME, null, contentValues);
             }
-            sqLiteDatabase.setTransactionSuccessful();
         } catch (Exception e) {
             e.printStackTrace();
-        } finally {
-            sqLiteDatabase.endTransaction();
-            close();
         }
     }
 
@@ -541,7 +527,7 @@ public class SQLiteDbUtil {
                 return null;
             }
             if (cursor.moveToNext()) {
-                return newInstance(c, cursor);
+                return cursor2Bean(c, cursor);
             }
             cursor.close();
         } catch (Exception e) {
@@ -554,46 +540,40 @@ public class SQLiteDbUtil {
         }
         return null;
     }
+
     /**
      * 删除数据表
      *
      * @param <T> 泛型对象
      * @param c   要删除的对象类，自动映射为表名
      */
-    public <T> void drop(Class<T> c) {
+    public <T> void dropTable(Class<T> c) {
         if (c == null) {
             return;
         }
         String TABLE_NAME = JavaReflectUtil.getClassName(c).toUpperCase();
-        String[] column = JavaReflectUtil.getAttributeNames(c);
-        Object[] type = JavaReflectUtil.getAttributeType(c);
-        Object[] listType = JavaReflectUtil.getAttributeListType(c);
-        int listItem = 0;
         String sql = "DROP TABLE " +
                 "IF EXISTS " +
                 TABLE_NAME;
-        for (int i = 0; i < column.length; i++) {
-            String tableColumn = column[i].toUpperCase();
-            if (!"ID".equals(tableColumn)) {
-                String typeInfo = ((Class) type[i]).getName();
-                if (isBase(typeInfo)) {  //是否基本类型
-
-                } else if (typeInfo.equals("java.util.List")) {
-                    Class listClass = (Class) listType[listItem++];
-                    drop(listClass);
-                } else {
-                    Class<?> newClass;
-                    try {
-                        newClass = Class.forName(typeInfo);
-                        drop(newClass);
-                    } catch (ClassNotFoundException e) {
-                        e.printStackTrace();
-                    }
-                }
+        divisionByClass(c, new OnClassDivisionListener() {
+            @Override
+            public void afterBase(String column, Class clzaa, boolean isLast) {
+                dropTable(clzaa);
             }
-        }
+
+            @Override
+            public void afterObject(String column, Class clzaa, boolean isLast) {
+                dropTable(clzaa);
+            }
+
+            @Override
+            public void afterList(String column, Class clzaa, boolean isLast) {
+                dropTable(clzaa);
+            }
+        });
         execSQL(sql);
     }
+
     /**
      * 查询表中的所有数据
      *
@@ -617,7 +597,7 @@ public class SQLiteDbUtil {
 //            }
 //            lists = new ArrayList<>();
 //            while (cursor.moveToNext()) {
-//                lists.add(newInstance(c, cursor));
+//                lists.add(cursor2Bean(c, cursor));
 //            }
 //        } catch (Exception e) {
 //            e.printStackTrace();
@@ -655,7 +635,7 @@ public class SQLiteDbUtil {
             }
             lists = new ArrayList<>();
             while (cursor.moveToNext()) {
-                lists.add(newInstance(c, cursor));
+                lists.add(cursor2Bean(c, cursor));
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -770,7 +750,7 @@ public class SQLiteDbUtil {
         }
         lists = new ArrayList<>();
         while (cursor.moveToNext()) {
-            lists.add(newInstance(c, cursor));
+            lists.add(cursor2Bean(c, cursor));
         }
         if (cursor != null) {
             cursor.close();
@@ -787,97 +767,38 @@ public class SQLiteDbUtil {
      * @return 所要创建的对象
      */
 
-    private <T> T newInstance(Class<T> c, Cursor cursor) {
-        String TABLE_NAME = JavaReflectUtil.getClassName(c).toUpperCase();
-        String[] column = JavaReflectUtil.getAttributeNames(c);
-        Object[] type = JavaReflectUtil.getAttributeType(c);
-        Object[] listType = JavaReflectUtil.getAttributeListType(c);
-        String id = cursor.getString(cursor.getColumnIndex("ID"));
-        int listItem = 0;
+    private <T> T cursor2Bean(Class<T> c, final Cursor cursor) {
+        final String TABLE_NAME = JavaReflectUtil.getClassName(c).toUpperCase();
+        final String id = cursor.getString(cursor.getColumnIndex("ID"));
         final Map retMap = new HashMap();
-        for (int i = 0; i < column.length; i++) {
-            String columnName = column[i];
-            String tableColumn = column[i].toUpperCase();
-            if (!"ID".equals(tableColumn)) {
-                String typeInfo = ((Class) type[i]).getName();
-                if (isBase(typeInfo)) {  //是否基本类型
-                    String val = cursor.getString(cursor.getColumnIndex(tableColumn));
-                    if (!StringUtil.isEmpty(val)) {
-                        retMap.put(columnName, val);
-                    }
-                } else if (typeInfo.equals("java.util.List")) {
-                    Class listClass = (Class) listType[listItem++];
-                    List clazzList = query(listClass, TABLE_NAME + "_ID", id);
-                    if (clazzList != null && clazzList.size() > 0) {
-                        retMap.put(columnName, clazzList);
-                    }
-                } else {
-                    Class<?> newClass;
-                    try {
-                        newClass = Class.forName(typeInfo);
-                        String mainID = cursor.getString(cursor.getColumnIndex(tableColumn));
-                        List clazzList = query(newClass, "ID", mainID);
-                        if (clazzList != null && clazzList.size() > 0) {
-                            retMap.put(columnName, clazzList.get(0));
-                        }
-                    } catch (ClassNotFoundException e) {
-                        e.printStackTrace();
-                    }
+        divisionByClass(c, new OnClassDivisionListener() {
+            @Override
+            public void afterBase(String column, Class clzaa, boolean isLast) {
+                String val = cursor.getString(cursor.getColumnIndex(column.toUpperCase()));
+                if (!StringUtil.isEmpty(val)) {
+                    retMap.put(column, val);
                 }
             }
-        }
+
+            @Override
+            public void afterObject(String column, Class clzaa, boolean isLast) {
+                String mainID = cursor.getString(cursor.getColumnIndex(column.toUpperCase()));
+                List clazzList = query(clzaa, "ID", mainID);
+                if (clazzList != null && clazzList.size() > 0) {
+                    retMap.put(column, clazzList.get(0));
+                }
+            }
+
+            @Override
+            public void afterList(String column, Class clzaa, boolean isLast) {
+                List clazzList = query(clzaa, TABLE_NAME + "_ID", id);
+                if (clazzList != null && clazzList.size() > 0) {
+                    retMap.put(column, clazzList);
+                }
+            }
+        });
         return (T) GsonUtil.stringToObject(GsonUtil.objectToString(retMap), c);
     }
-//    public static <T> T newInstance(Class<T> c, Cursor cursor) {
-//        try {
-//            Constructor<T> con = c.getConstructor();
-//            con.setAccessible(true);
-//            T t = con.newInstance();
-//            Class[] types = JavaReflectUtil.getAttributeType(c);
-//            String[] columns = JavaReflectUtil.getAttributeNames(c);
-//            for (int i = 0; i < types.length; i++) {
-//                String column = columns[i];
-//                String tableColumn = columns[i].toUpperCase();
-//                Class type = types[i];
-//                Method method = c.getMethod("set" + column.substring(0, 1).toUpperCase() + column.substring(1), new Class[]{type});
-//                Object value = null;
-//                if (type.equals(String.class)) {
-//                    value = cursor.getString(cursor.getColumnIndex(tableColumn));
-//                } else if (type.equals(Integer.class) || type.getName().equals("int")) {
-//                    value = cursor.getInt(cursor.getColumnIndex(tableColumn));
-//                } else if (type.equals(Character.class) || type.getName().equals("char")) {
-//                    value = Character.valueOf(cursor.getString(cursor.getColumnIndex(tableColumn)).charAt(0));
-//                } else if (type.equals(Boolean.class) || type.getName().equals("boolean")) {
-//                    value = "true".equalsIgnoreCase(cursor.getString(cursor.getColumnIndex(tableColumn))) ? true : false;
-//                } else if (type.equals(Float.class) || type.getName().equals("float")) {
-//                    value = cursor.getFloat(cursor.getColumnIndex(tableColumn));
-//                } else if (type.equals(Double.class) || type.getName().equals("double")) {
-//                    value = cursor.getDouble(cursor.getColumnIndex(tableColumn));
-//                } else if (type.equals(Byte.class) || type.getName().equals("byte")) {
-//                    value = Byte.valueOf(cursor.getString(cursor.getColumnIndex(tableColumn)));
-//                } else if (type.equals(Short.class) || type.getName().equals("short")) {
-//                    value = cursor.getShort(cursor.getColumnIndex(tableColumn));
-//                } else if (type.equals(Long.class) || type.getName().equals("long")) {
-//                    value = cursor.getLong(cursor.getColumnIndex(tableColumn));
-//                } else if (type.equals(java.sql.Date.class)) {
-//                    value = java.sql.Date.valueOf(cursor.getString(cursor.getColumnIndex(tableColumn)));
-//                } else if (type.equals(BigDecimal.class)) {
-//                    value = BigDecimal.valueOf(cursor.getLong(cursor.getColumnIndex(tableColumn)));
-//                }
-//                method.invoke(t, value);
-//            }
-//            return t;
-//        } catch (NoSuchMethodException e) {
-//            e.printStackTrace();
-//        } catch (IllegalAccessException e) {
-//            e.printStackTrace();
-//        } catch (InstantiationException e) {
-//            e.printStackTrace();
-//        } catch (InvocationTargetException e) {
-//            e.printStackTrace();
-//        }
-//        return null;
-//    }
 
     /**
      * 根据对象获取 ContentValues   ids TABLE_ID 'value'
@@ -886,12 +807,8 @@ public class SQLiteDbUtil {
      * @param <T> 泛型对象
      * @return ContentValues用来操作SQLite数据库
      */
-
     public <T> ContentValues getContentValues(T t, String... ids) {
         Class<?> c = t.getClass();
-        if (List.class.isAssignableFrom(c)) {
-            Log.d(TAG, "getContentValues: ");
-        }
         String table_name = JavaReflectUtil.getClassName(c).toUpperCase();
         String id = getID(table_name);
         List<Map<String, Object>> allInfo = JavaReflectUtil.getAllFiledInfo(t);
