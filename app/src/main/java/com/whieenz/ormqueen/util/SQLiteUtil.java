@@ -298,7 +298,7 @@ public class SQLiteUtil {
 //     * @param t   要插入的对象
 //     * @return [影响的行数]he row ID of the newly inserted row, or -1 if an error occurred
 //     */
-//    public <T> long insert(T t) {
+//    public <T> long exeInsert(T t) {
 //        if (t == null) {
 //            return -1;
 //        }
@@ -307,7 +307,7 @@ public class SQLiteUtil {
 //        long num = 0;
 //        try {
 //            open();
-//            num = sqLiteDatabase.insert(TABLE_NAME, null, contentValues);
+//            num = sqLiteDatabase.exeInsert(TABLE_NAME, null, contentValues);
 //        } catch (Exception e) {
 //            e.printStackTrace();
 //        } finally {

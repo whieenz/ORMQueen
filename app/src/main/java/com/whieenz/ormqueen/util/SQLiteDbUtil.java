@@ -306,7 +306,7 @@ public class SQLiteDbUtil {
 //     * @param t   要插入的对象
 //     * @return [影响的行数]he row ID of the newly inserted row, or -1 if an error occurred
 //     */
-//    public <T> long insert(T t) {
+//    public <T> long exeInsert(T t) {
 //        if (t == null) {
 //            return -1;
 //        }
@@ -315,7 +315,7 @@ public class SQLiteDbUtil {
 //        long num = 0;
 //        try {
 //            open();
-//            num = sqLiteDatabase.insert(TABLE_NAME, null, contentValues);
+//            num = sqLiteDatabase.exeInsert(TABLE_NAME, null, contentValues);
 //        } catch (Exception e) {
 //            e.printStackTrace();
 //        } finally {
@@ -685,22 +685,6 @@ public class SQLiteDbUtil {
         }
     }
 
-//    private String getID(String sql) {
-//        String id = "";
-//        try {
-//            openDB();
-//            Cursor cursor = sqLiteDatabase.rawQuery(sql, null, null);
-//            if (cursor.moveToFirst()) {
-//                id = cursor.getString(cursor.getColumnIndex("ID"));
-//            }
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        } finally {
-//            close();
-//        }
-//        return id == null ? "1" : id;
-//    }
-
     private String getID(String table_name) {
         String id = "";
         String sql = "SELECT MAX(ID)+1 AS ID FROM " + table_name;
@@ -828,56 +812,6 @@ public class SQLiteDbUtil {
         }
         return (T) GsonUtil.stringToObject(GsonUtil.objectToString(retMap), c);
     }
-//    public static <T> T newInstance(Class<T> c, Cursor cursor) {
-//        try {
-//            Constructor<T> con = c.getConstructor();
-//            con.setAccessible(true);
-//            T t = con.newInstance();
-//            Class[] types = JavaReflectUtil.getAttributeType(c);
-//            String[] columns = JavaReflectUtil.getAttributeNames(c);
-//            for (int i = 0; i < types.length; i++) {
-//                String column = columns[i];
-//                String tableColumn = columns[i].toUpperCase();
-//                Class type = types[i];
-//                Method method = c.getMethod("set" + column.substring(0, 1).toUpperCase() + column.substring(1), new Class[]{type});
-//                Object value = null;
-//                if (type.equals(String.class)) {
-//                    value = cursor.getString(cursor.getColumnIndex(tableColumn));
-//                } else if (type.equals(Integer.class) || type.getName().equals("int")) {
-//                    value = cursor.getInt(cursor.getColumnIndex(tableColumn));
-//                } else if (type.equals(Character.class) || type.getName().equals("char")) {
-//                    value = Character.valueOf(cursor.getString(cursor.getColumnIndex(tableColumn)).charAt(0));
-//                } else if (type.equals(Boolean.class) || type.getName().equals("boolean")) {
-//                    value = "true".equalsIgnoreCase(cursor.getString(cursor.getColumnIndex(tableColumn))) ? true : false;
-//                } else if (type.equals(Float.class) || type.getName().equals("float")) {
-//                    value = cursor.getFloat(cursor.getColumnIndex(tableColumn));
-//                } else if (type.equals(Double.class) || type.getName().equals("double")) {
-//                    value = cursor.getDouble(cursor.getColumnIndex(tableColumn));
-//                } else if (type.equals(Byte.class) || type.getName().equals("byte")) {
-//                    value = Byte.valueOf(cursor.getString(cursor.getColumnIndex(tableColumn)));
-//                } else if (type.equals(Short.class) || type.getName().equals("short")) {
-//                    value = cursor.getShort(cursor.getColumnIndex(tableColumn));
-//                } else if (type.equals(Long.class) || type.getName().equals("long")) {
-//                    value = cursor.getLong(cursor.getColumnIndex(tableColumn));
-//                } else if (type.equals(java.sql.Date.class)) {
-//                    value = java.sql.Date.valueOf(cursor.getString(cursor.getColumnIndex(tableColumn)));
-//                } else if (type.equals(BigDecimal.class)) {
-//                    value = BigDecimal.valueOf(cursor.getLong(cursor.getColumnIndex(tableColumn)));
-//                }
-//                method.invoke(t, value);
-//            }
-//            return t;
-//        } catch (NoSuchMethodException e) {
-//            e.printStackTrace();
-//        } catch (IllegalAccessException e) {
-//            e.printStackTrace();
-//        } catch (InstantiationException e) {
-//            e.printStackTrace();
-//        } catch (InvocationTargetException e) {
-//            e.printStackTrace();
-//        }
-//        return null;
-//    }
 
     /**
      * 根据对象获取 ContentValues   ids TABLE_ID 'value'
