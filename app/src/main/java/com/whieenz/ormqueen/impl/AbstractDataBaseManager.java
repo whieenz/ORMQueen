@@ -81,7 +81,7 @@ abstract class AbstractDataBaseManager extends SQLiteOpenHelper implements IData
     }
 
     @Override
-    public void  insert(Object object) {
+    public void insert(Object object) {
         try {
             openDB();
             beginTransaction();

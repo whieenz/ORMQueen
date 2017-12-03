@@ -8,7 +8,6 @@ import android.database.Cursor;
 import android.database.DatabaseErrorHandler;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
-import android.database.sqlite.SQLiteOpenHelper;
 import android.os.Build;
 
 import com.whieenz.ormqueen.inter.OnClassDivisionListener;
@@ -25,10 +24,9 @@ import java.util.Map;
 
 /**
  * Created by whieenz on 2017/12/3.
- *
  */
 
-abstract class DataBaseManager extends AbstractDataBaseManager {
+public abstract class DataBaseManager extends AbstractDataBaseManager {
 
     private SQLiteDatabase db;
 
@@ -39,6 +37,7 @@ abstract class DataBaseManager extends AbstractDataBaseManager {
     public DataBaseManager(Context context, String name, SQLiteDatabase.CursorFactory factory, int version, DatabaseErrorHandler errorHandler) {
         super(context, name, factory, version, errorHandler);
     }
+
     public SQLiteDatabase getDatabase() {
         return db;
     }
@@ -82,12 +81,12 @@ abstract class DataBaseManager extends AbstractDataBaseManager {
 
     @Override
     public <T> void doInsertAll(List<T> list) {
-        insertAll(list);
+        exeInsertAll(list);
     }
 
     @Override
     void doInsert(Object object) {
-        insert(object);
+        exeInsert(object);
     }
 
     @Override
@@ -102,7 +101,7 @@ abstract class DataBaseManager extends AbstractDataBaseManager {
 
     @Override
     <T> List<T> doQueryAll(Class<T> c) {
-        return null;
+        return exeQueryAll(c);
     }
 
 
@@ -167,7 +166,7 @@ abstract class DataBaseManager extends AbstractDataBaseManager {
      * @param <T>   泛型对象
      * @param lists 要插入的对象集合
      */
-    private <T> void insertAll(List<T> lists, String... ids) {
+    private <T> void exeInsertAll(List<T> lists, String... ids) {
         if (lists == null) {
             return;
         }
@@ -222,7 +221,7 @@ abstract class DataBaseManager extends AbstractDataBaseManager {
 
             @Override
             public void afterObject(String column, Class clzaa, boolean isLast) {
-                deleteAll(clzaa);
+                exeDeleteAll(clzaa);
             }
 
             @Override
@@ -345,6 +344,43 @@ abstract class DataBaseManager extends AbstractDataBaseManager {
             closeDB();
         }
         return null;
+    }
+
+    private <T> List<T> exeQueryAll(Class<T> c, String... condition) {
+        List<T> lists = null;
+        Cursor cursor = null;
+        try {
+            if (c == null) {
+                return null;
+            }
+            String TABLE_NAME = JavaReflectUtil.getClassName(c).toUpperCase();
+            StringBuilder sql = new StringBuilder();
+            sql.append("SELECT * FROM ").append(TABLE_NAME);
+            List<String> conditions = new ArrayList<>();
+            for (int i = 0; i < condition.length; i++) {
+                sql.append(" WHERE ");
+                sql.append(condition[i++]);
+                sql.append(" =?");
+                if (i < condition.length - 1)
+                    sql.append(" ,");
+                conditions.add(condition[i]);
+            }
+            cursor = db.rawQuery(sql.toString(), conditions.toArray(new String[conditions.size()]));
+            if (cursor == null) {
+                return null;
+            }
+            lists = new ArrayList<>();
+            while (cursor.moveToNext()) {
+                lists.add(cursor2Bean(c, cursor));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+        }
+        return lists;
     }
 
     /**
@@ -576,7 +612,7 @@ abstract class DataBaseManager extends AbstractDataBaseManager {
 
             @Override
             public void afterObject(String column, Class clzaa, Object value) {
-                String subTableName = clzaa.getName().toUpperCase();
+                String subTableName = JavaReflectUtil.getClassName(clzaa).toUpperCase();
                 String subID = getID(subTableName);
                 contentValues.put(column, subID);
                 exeInsert(value, table_name + "_ID", id);
@@ -584,7 +620,7 @@ abstract class DataBaseManager extends AbstractDataBaseManager {
 
             @Override
             public void afterList(String column, Class clzaa, List value) {
-                insertAll(value, table_name + "_ID", id);
+                exeInsertAll(value, table_name + "_ID", id);
             }
         });
         contentValues.remove("id");
@@ -605,14 +641,7 @@ abstract class DataBaseManager extends AbstractDataBaseManager {
         Class<?> c = t.getClass();
         String TABLE_NAME = JavaReflectUtil.getClassName(c).toUpperCase();
         ContentValues contentValues = getContentValues(t, ids);
-        long num = 0;
-        try {
-            num = db.insert(TABLE_NAME, null, contentValues);
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            closeDB();
-        }
+        long num = db.insert(TABLE_NAME, null, contentValues);
         return num;
     }
 

@@ -9,7 +9,6 @@ import java.util.Map;
 
 /**
  * Created by whieenz on 2017/12/3.
- *
  */
 
 public class DivisionUtil {
@@ -72,7 +71,7 @@ public class DivisionUtil {
             Object value = info.get("value");
             String typeInfo = type.getName();
             if (isBase(typeInfo)) {
-                listener.afterBase(column, type, value.toString());
+                listener.afterBase(column, type, value == null ? null : StringUtil.getStr(value));
             } else if (typeInfo.equals("java.util.List")) {
                 Class listClass = (Class) listType[listItem++];
                 listener.afterList(column, listClass, (List) value);
