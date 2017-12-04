@@ -19,7 +19,7 @@ import java.util.Map;
 
 /**
  * SQLite封装工具类
- * Created by heziwen on 2017-08-28.
+ * Created by whieenz on 2017-08-28.
  */
 
 public class SQLiteDbUtil {

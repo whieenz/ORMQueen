@@ -1,4 +1,4 @@
-package com.whieenz.ormqueen.util;
+package com.whieenz.ormqueenlibrary.util;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -107,7 +107,7 @@ public class JavaReflectUtil {
         List<Object> types = new ArrayList<>();
         for (Field f : declaredFields) {
             f.setAccessible(true);
-            if (f.getType() == java.util.List.class) {
+            if (f.getType() == List.class) {
                 // 如果是List类型，得到其Generic的类型
                 Type genericType = f.getGenericType();
                 if (genericType == null) continue;

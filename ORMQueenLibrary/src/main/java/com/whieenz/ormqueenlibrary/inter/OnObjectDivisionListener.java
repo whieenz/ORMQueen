@@ -1,4 +1,4 @@
-package com.whieenz.ormqueen.inter;
+package com.whieenz.ormqueenlibrary.inter;
 
 import java.util.List;
 

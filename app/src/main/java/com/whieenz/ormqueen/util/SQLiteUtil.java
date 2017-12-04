@@ -21,7 +21,7 @@ import java.util.Map;
 
 /**
  * SQLite封装工具类
- * Created by heziwen on 2017-08-28.
+ * Created by whieenz on 2017-08-28.
  */
 
 public class SQLiteUtil {
@@ -168,9 +168,7 @@ public class SQLiteUtil {
 
     }
 
-    private void openDB() {
-        sqLiteDatabase = dbHelper.getWritableDatabase();
-    }
+
 
     /**
      * 关闭数据库连接
@@ -289,33 +287,6 @@ public class SQLiteUtil {
             sqlBuilder.append(",");
         }
     }
-
-
-//    /**
-//     * 插入一条数据
-//     *
-//     * @param <T> 泛型对象
-//     * @param t   要插入的对象
-//     * @return [影响的行数]he row ID of the newly inserted row, or -1 if an error occurred
-//     */
-//    public <T> long exeInsert(T t) {
-//        if (t == null) {
-//            return -1;
-//        }
-//        String TABLE_NAME = JavaReflectUtil.getClassName(t.getClass());
-//        ContentValues contentValues = getContentValues(t);
-//        long num = 0;
-//        try {
-//            open();
-//            num = sqLiteDatabase.exeInsert(TABLE_NAME, null, contentValues);
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        } finally {
-//            close();
-//        }
-//        return num;
-//    }
-
 
     /**
      * 插入批量数据
@@ -441,7 +412,6 @@ public class SQLiteUtil {
         }
         int num = 0;
         try {
-            openDB();
             num = sqLiteDatabase.delete(TABLE_NAME, null, null);
         } catch (Exception e) {
             e.printStackTrace();
@@ -581,34 +551,6 @@ public class SQLiteUtil {
      * @param <T> 泛型对象
      * @return 查询出来的对象类集合
      */
-//    public <T> List<T> query(Class<T> c) {
-//
-//        List<T> lists = null;
-//        Cursor cursor = null;
-//        try {
-//            if (c == null) {
-//                return null;
-//            }
-//            openDB();
-//            String TABLE_NAME = JavaReflectUtil.getClassName(c).toUpperCase();
-//            cursor = sqLiteDatabase.query(TABLE_NAME, null, null, null, null, null, null);
-//            if (cursor == null) {
-//                return null;
-//            }
-//            lists = new ArrayList<>();
-//            while (cursor.moveToNext()) {
-//                lists.add(cursor2Bean(c, cursor));
-//            }
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        } finally {
-//            if (cursor != null) {
-//                cursor.close();
-//            }
-//            close();
-//        }
-//        return lists;
-//    }
     public <T> List<T> query(Class<T> c, String... condition) {
         List<T> lists = null;
         Cursor cursor = null;
@@ -616,7 +558,6 @@ public class SQLiteUtil {
             if (c == null) {
                 return null;
             }
-            openDB();
             String TABLE_NAME = JavaReflectUtil.getClassName(c).toUpperCase();
             StringBuilder sql = new StringBuilder();
             sql.append("SELECT * FROM ").append(TABLE_NAME);
@@ -656,7 +597,6 @@ public class SQLiteUtil {
      */
     public void execSQL(String sql) {
         try {
-            openDB();
             sqLiteDatabase.execSQL(sql);
         } catch (Exception e) {
             e.printStackTrace();
@@ -665,31 +605,15 @@ public class SQLiteUtil {
         }
     }
 
-//    private String getID(String sql) {
-//        String id = "";
-//        try {
-//            openDB();
-//            Cursor cursor = sqLiteDatabase.rawQuery(sql, null, null);
-//            if (cursor.moveToFirst()) {
-//                id = cursor.getString(cursor.getColumnIndex("ID"));
-//            }
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        } finally {
-//            close();
-//        }
-//        return id == null ? "1" : id;
-//    }
-
     private String getID(String table_name) {
         String id = "";
         String sql = "SELECT MAX(ID)+1 AS ID FROM " + table_name;
         try {
-            openDB();
             Cursor cursor = sqLiteDatabase.rawQuery(sql, null, null);
             if (cursor.moveToFirst()) {
                 id = cursor.getString(cursor.getColumnIndex("ID"));
             }
+            cursor.close();
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
@@ -752,9 +676,7 @@ public class SQLiteUtil {
         while (cursor.moveToNext()) {
             lists.add(cursor2Bean(c, cursor));
         }
-        if (cursor != null) {
-            cursor.close();
-        }
+        cursor.close();
         return lists;
     }
 
@@ -770,7 +692,7 @@ public class SQLiteUtil {
     private <T> T cursor2Bean(Class<T> c, final Cursor cursor) {
         final String TABLE_NAME = JavaReflectUtil.getClassName(c).toUpperCase();
         final String id = cursor.getString(cursor.getColumnIndex("ID"));
-        final Map retMap = new HashMap();
+        final Map<String, Object> retMap = new HashMap<>();
         divisionByClass(c, new OnClassDivisionListener() {
             @Override
             public void afterBase(String column, Class clzaa, boolean isLast) {
@@ -809,40 +731,35 @@ public class SQLiteUtil {
      */
     public <T> ContentValues getContentValues(T t, String... ids) {
         Class<?> c = t.getClass();
-        String table_name = JavaReflectUtil.getClassName(c).toUpperCase();
-        String id = getID(table_name);
-        List<Map<String, Object>> allInfo = JavaReflectUtil.getAllFiledInfo(t);
-        ContentValues contentValues = new ContentValues();
+        final String table_name = JavaReflectUtil.getClassName(c).toUpperCase();
+        final String id = getID(table_name);
+        final ContentValues contentValues = new ContentValues();
         for (int i = 0; i < ids.length; i += 2) {
             contentValues.put(ids[i], ids[i + 1]);
         }
-        for (int i = 0; i < allInfo.size(); i++) {
-            Map<String, Object> info = allInfo.get(i);
-            String column = info.get("name").toString().toUpperCase();
-            Class type = (Class) info.get("type");
-            Object value = info.get("value");
-            String typeInfo = type.getName();
-            if (isBase(typeInfo)) {  //是否基本类型
+        divisionByObject(t, new OnObjectDivisionListener() {
+            @Override
+            public void afterBase(String column, Class clzaa, String value) {
                 if (value == null) {
                     contentValues.putNull(column);
                 } else {
                     contentValues.put(column, String.valueOf(value));
                 }
-            } else if (typeInfo.equals("java.util.List")) {
-                insertAll((List) value, table_name + "_ID", id);
-            } else {
-                Class<?> newClass;
-                try {
-                    newClass = Class.forName(typeInfo);
-                    String subTableName = JavaReflectUtil.getClassName(newClass).toUpperCase();
-                    String subID = getID(subTableName);
-                    contentValues.put(column, subID);
-                } catch (ClassNotFoundException e) {
-                    e.printStackTrace();
-                }
+            }
+
+            @Override
+            public void afterObject(String column, Class clzaa, Object value) {
+                String subTableName = JavaReflectUtil.getClassName(clzaa).toUpperCase();
+                String subID = getID(subTableName);
+                contentValues.put(column, subID);
                 insert(value, table_name + "_ID", id);
             }
-        }
+
+            @Override
+            public void afterList(String column, Class clzaa, List value) {
+                insertAll(value, table_name + "_ID", id);
+            }
+        });
         contentValues.remove("id");
         return contentValues;
     }
@@ -863,7 +780,6 @@ public class SQLiteUtil {
         ContentValues contentValues = getContentValues(t, ids);
         long num = 0;
         try {
-            openDB();
             num = sqLiteDatabase.insert(TABLE_NAME, null, contentValues);
         } catch (Exception e) {
             e.printStackTrace();

@@ -1,7 +1,8 @@
-package com.whieenz.ormqueen.util;
+package com.whieenz.ormqueenlibrary.util;
 
-import com.whieenz.ormqueen.inter.OnClassDivisionListener;
-import com.whieenz.ormqueen.inter.OnObjectDivisionListener;
+
+import com.whieenz.ormqueenlibrary.inter.OnClassDivisionListener;
+import com.whieenz.ormqueenlibrary.inter.OnObjectDivisionListener;
 
 import java.util.Arrays;
 import java.util.List;

@@ -1,4 +1,4 @@
-package com.whieenz.ormqueen.util;
+package com.whieenz.ormqueenlibrary.util;
 
 import org.json.JSONException;
 import org.json.JSONObject;

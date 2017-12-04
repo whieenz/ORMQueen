@@ -2,14 +2,12 @@ package com.whieenz.ormqueen;
 
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
 
 import com.whieenz.LogCook;
 import com.whieenz.ormqueen.bean.EntitySlBean;
 import com.whieenz.ormqueen.bean.MaterialXjListBean;
 import com.whieenz.ormqueen.bean.MultiBean;
 import com.whieenz.ormqueen.util.DatabaseHelper;
-import com.whieenz.ormqueen.util.SQLiteDbUtil;
 import com.whieenz.ormqueen.util.StringUtil;
 
 import java.math.BigDecimal;
@@ -56,7 +54,7 @@ public class MainActivity extends AppCompatActivity {
         helper.insert(multiBean);
         List<MultiBean> multiBeens = helper.queryAll(MultiBean.class);
         LogCook.log(StringUtil.getStr(multiBeens));
-        helper.deleteAll(MultiBean.class);
+//        helper.deleteAll(MultiBean.class);
 //        SQLiteDbUtil.getSQLiteDbUtil(this).createTable(MultiBean.class);
 //        SQLiteDbUtil.getSQLiteDbUtil(this).exeInsert(multiBean);
 //        List<MultiBean> query = SQLiteDbUtil.getSQLiteDbUtil(this).query(MultiBean.class);

@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Created by heziwen on 2017/8/3.
+ * Created by whieenz on 2017/8/3.
  */
 
 public class GsonUtil {

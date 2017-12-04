@@ -1,4 +1,4 @@
-package com.whieenz.ormqueen.inter;
+package com.whieenz.ormqueenlibrary.inter;
 
 /**
  * Created by whieenz on 2017/11/30.

@@ -1,4 +1,4 @@
-package com.whieenz.ormqueen.impl;
+package com.whieenz.ormqueenlibrary.impl;
 
 
 import android.annotation.TargetApi;
@@ -10,12 +10,12 @@ import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Build;
 
-import com.whieenz.ormqueen.inter.OnClassDivisionListener;
-import com.whieenz.ormqueen.inter.OnObjectDivisionListener;
-import com.whieenz.ormqueen.util.DivisionUtil;
-import com.whieenz.ormqueen.util.GsonUtil;
-import com.whieenz.ormqueen.util.JavaReflectUtil;
-import com.whieenz.ormqueen.util.StringUtil;
+import com.whieenz.ormqueenlibrary.inter.OnClassDivisionListener;
+import com.whieenz.ormqueenlibrary.inter.OnObjectDivisionListener;
+import com.whieenz.ormqueenlibrary.util.DivisionUtil;
+import com.whieenz.ormqueenlibrary.util.GsonUtil;
+import com.whieenz.ormqueenlibrary.util.JavaReflectUtil;
+import com.whieenz.ormqueenlibrary.util.StringUtil;
 
 import java.util.ArrayList;
 import java.util.HashMap;

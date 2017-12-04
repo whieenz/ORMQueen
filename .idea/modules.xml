@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/ORMQueen.iml" filepath="$PROJECT_DIR$/ORMQueen.iml" />
+      <module fileurl="file://$PROJECT_DIR$/ORMQueenLibrary/ORMQueenLibrary.iml" filepath="$PROJECT_DIR$/ORMQueenLibrary/ORMQueenLibrary.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
     </modules>
   </component>
